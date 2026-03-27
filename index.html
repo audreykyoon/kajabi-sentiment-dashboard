@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kajabi Cofounder — Sentiment Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #181818;
+  --surface2: #202020;
+  --border: #2a2a2a;
+  --border2: #333;
+  --text: #f0ede6;
+  --muted: #666;
+  --muted2: #888;
+  --pos: #4ade80;
+  --pos-bg: #0d2818;
+  --pos-border: #1a4a28;
+  --neg: #f87171;
+  --neg-bg: #2a0e0e;
+  --neg-border: #4a1a1a;
+  --neu: #fbbf24;
+  --neu-bg: #2a1e08;
+  --neu-border: #4a3410;
+  --mix: #a78bfa;
+  --mix-bg: #1a1230;
+  --mix-border: #2e1f5a;
+  --accent: #e8e0d0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+.mono { font-family: 'DM Mono', monospace; }
+
+header { border-bottom: 1px solid var(--border); padding: 28px 40px 24px; display: flex; align-items: flex-end; justify-content: space-between; }
+.header-left h1 { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; color: var(--text); }
+.header-left p { font-size: 12px; color: var(--muted2); margin-top: 4px; font-family: 'DM Mono', monospace; }
+.header-right { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; text-align: right; }
+
+main { padding: 32px 40px; max-width: 1100px; }
+
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.stat-val { font-size: 36px; font-weight: 300; font-family: 'DM Mono', monospace; line-height: 1; margin-bottom: 6px; }
+.stat-label { font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.1em; }
+.stat-pos .stat-val { color: var(--pos); }
+.stat-neg .stat-val { color: var(--neg); }
+.stat-neu .stat-val { color: var(--neu); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.panel-title { font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; font-family: 'DM Mono', monospace; }
+
+.theme-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.theme-name { font-size: 13px; color: var(--muted2); width: 160px; flex-shrink: 0; }
+.theme-track { flex: 1; height: 6px; background: var(--border2); border-radius: 3px; overflow: hidden; }
+.theme-bar { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.tb-pos { background: var(--pos); } .tb-neg { background: var(--neg); }
+.tb-neu { background: var(--neu); } .tb-mix { background: var(--mix); }
+.theme-ct { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; min-width: 18px; text-align: right; }
+
+.opp-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted2); line-height: 1.5; display: flex; gap: 10px; }
+.opp-item:last-child { border-bottom: none; }
+.opp-arrow { color: var(--muted); flex-shrink: 0; }
+
+.entries-section { margin-top: 8px; }
+.entry { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+.entry:hover { border-color: var(--border2); }
+.entry-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.badge { font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; text-transform: uppercase; }
+.badge-positive { background: var(--pos-bg); color: var(--pos); border: 1px solid var(--pos-border); }
+.badge-negative { background: var(--neg-bg); color: var(--neg); border: 1px solid var(--neg-border); }
+.badge-neutral  { background: var(--neu-bg); color: var(--neu); border: 1px solid var(--neu-border); }
+.badge-mixed    { background: var(--mix-bg); color: var(--mix); border: 1px solid var(--mix-border); }
+.entry-text { font-size: 13px; color: #aaa; line-height: 1.6; flex: 1; font-style: italic; }
+.entry-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.tag { font-size: 11px; border: 1px solid var(--border2); border-radius: 20px; padding: 2px 9px; color: var(--muted); font-family: 'DM Mono', monospace; }
+.tag-x { background: #1a1a1a; color: #e8e0d0; border-color: #333; }
+.tag-li { background: #0d1e33; color: #5b9bd5; border-color: #1a3a5c; }
+.tag-reddit { background: #2a1000; color: #ff6a1a; border-color: #4a2200; }
+.tag-tp { background: #002a1a; color: #00b67a; border-color: #004a2a; }
+.tag-yt { background: #2a0a0a; color: #ff4444; border-color: #4a1010; }
+.tag-cap { background: #1a0a2a; color: #a78bfa; border-color: #3a1a5a; }
+.entry-insight { font-size: 13px; color: var(--text); padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.5; }
+.insight-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-title { font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.1em; font-family: 'DM Mono', monospace; }
+
+.empty { text-align: center; padding: 60px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 13px; border: 1px dashed var(--border); border-radius: 10px; }
+
+.instructions { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 32px; }
+.instructions p { font-size: 13px; color: var(--muted2); line-height: 1.7; margin-bottom: 0; }
+.instructions strong { color: var(--text); font-weight: 500; }
+
+.sentiment-mini { display: inline-flex; gap: 6px; align-items: center; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
+.export-btn { font-size: 11px; background: transparent; border: 1px solid var(--border2); border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--muted2); font-family: 'DM Mono', monospace; }
+.export-btn:hover { border-color: var(--muted); color: var(--text); }
+.filter-btn { font-size: 11px; background: transparent; border: 1px solid var(--border2); border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--muted2); font-family: 'DM Mono', monospace; transition: all 0.15s; }
+.filter-btn:hover { border-color: var(--muted); color: var(--text); }
+.filter-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+.pb-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.pb-name { font-size:13px; color:var(--muted2); width:110px; flex-shrink:0; display:flex; align-items:center; gap:6px; }
+.pb-stack { flex:1; height:8px; border-radius:4px; overflow:hidden; display:flex; background:var(--border2); }
+.pb-seg { height:100%; }
+.pb-pos { background:#639922; }
+.pb-neg { background:#E24B4A; }
+.pb-neu { background:#EF9F27; }
+.pb-mix { background:#7F77DD; }
+.pb-counts { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; min-width:140px; display:flex; gap:8px; flex-wrap:wrap; }
+.pb-caveat { font-size:11px; color:var(--muted); font-style:italic; margin-top:2px; margin-bottom:8px; padding-left:116px; line-height:1.5; }
+.pb-tag { font-size:10px; font-weight:500; padding:1px 6px; border-radius:20px; }
+.pb-tag.tag-x { background:#1a1a18; color:#e8e0d0; }
+.pb-tag.tag-li { background:#0d1e33; color:#5b9bd5; }
+.pb-tag.tag-reddit { background:#2a1000; color:#ff6a1a; }
+.pb-tag.tag-tp { background:#002a1a; color:#00b67a; }
+.pb-tag.tag-yt { background:#2a0a0a; color:#ff4444; }
+.dominant-pill { font-size:10px; font-weight:500; padding:2px 7px; border-radius:20px; margin-left:auto; white-space:nowrap; }
+.dp-pos { background:#eaf3de; color:#3b6d11; }
+.dp-neg { background:#fcebeb; color:#a32d2d; }
+.dp-mix { background:#faeeda; color:#854f0b; }
+.pb-total-row { border-top:1px solid var(--border); margin-top:10px; padding-top:10px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.pb-total-label { font-size:12px; font-weight:500; color:var(--text); font-family:'DM Mono',monospace; }
+.pb-total-counts { display:flex; gap:12px; flex-wrap:wrap; }
+.pb-total-item { font-size:12px; color:var(--muted2); display:flex; align-items:center; gap:4px; }
+.pb-dot { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Kajabi Cofounder — Social Sentiment</h1>
+    <p class="mono">X · LinkedIn · Reddit · Trustpilot · YouTube · March 2026 · <span id="headerCount">0</span> data points analyzed</p>
+  </div>
+  <div class="header-right mono" id="lastUpdated">No data yet</div>
+</header>
+
+<main>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-val mono" id="sTotal">0</div><div class="stat-label">Data points</div></div>
+    <div class="stat stat-pos"><div class="stat-val mono" id="sPos">0</div><div class="stat-label">Positive</div></div>
+    <div class="stat stat-neg"><div class="stat-val mono" id="sNeg">0</div><div class="stat-label">Negative</div></div>
+    <div class="stat stat-neu"><div class="stat-val mono" id="sNeu">0</div><div class="stat-label">Neutral / mixed</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">Themes by frequency</div>
+      <div id="themeChart"><div style="color:var(--muted);font-size:13px;font-family:'DM Mono',monospace">No data yet</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Sentiment by platform</div>
+      <div id="platformChart"><div style="color:var(--muted);font-size:13px;font-family:'DM Mono',monospace">No data yet</div></div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">All analyzed posts</div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button class="filter-btn active" onclick="setFilter('all')" id="f-all">All</button>
+      <button class="filter-btn" onclick="setFilter('X (Twitter)')" id="f-x">X</button>
+      <button class="filter-btn" onclick="setFilter('LinkedIn')" id="f-li">LinkedIn</button>
+      <button class="filter-btn" onclick="setFilter('Reddit')" id="f-reddit">Reddit</button>
+      <button class="filter-btn" onclick="setFilter('Trustpilot')" id="f-tp">Trustpilot</button>
+      <button class="filter-btn" onclick="setFilter('YouTube')" id="f-yt">YouTube</button>
+      <button class="filter-btn" onclick="setFilter('Capterra')" id="f-cap">Capterra</button>
+      <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+  <div id="list"><div class="empty">// waiting for data —<br>paste posts into Claude chat to begin</div></div>
+
+</main>
+
+<script>var DATA = [
+  {text:"What are the probabilities that you are conscious? That Cofounder (Kajabi) is?",sentiment:"neutral",themes:["Cofounder AI"],platform:"X (Twitter)",insight:"Cofounder named alongside major AIs — brand awareness gaining philosophical traction.",contentAngle:"Position Cofounder as a different kind of AI — not just a tool, but a business partner."},
+  {text:"Kajabi's got a dedicated AI Cofounder built in 😳 But it comes with extra charges again",sentiment:"mixed",themes:["Cofounder AI","Pricing / value"],platform:"X (Twitter)",insight:"Excitement about Cofounder immediately undercut by pricing concern — a recurring pattern.",contentAngle:"Address the value question head-on: what does Cofounder actually save you in time and money?"},
+  {text:"How I Built a 10K Business in 10 Minutes with AI and Kajabi",sentiment:"positive",themes:["Cofounder AI","Revenue / success"],platform:"X (Twitter)",insight:"AI + Kajabi framed as an automation system, not just a platform — strong aspirational hook.",contentAngle:"AI + Kajabi as a system — end-to-end automation workflow content series."},
+  {text:"Kajabi can do more than most people think. I've been using it since 2018. Every day I discover features. No second tool needed. Kajabi is enough.",sentiment:"positive",themes:["All-in-one value","AI features"],platform:"X (Twitter)",insight:"Long-tenured user satisfaction — 'Kajabi is enough' is organic positioning worth amplifying.",contentAngle:"Feature discovery series: things I didn't know Kajabi could do."},
+  {text:"Kajabi makes my life very easy. It bundles my website, landing pages, forms, CRM, and courses. Truly a great tool for the cost. Cost: $399/month",sentiment:"positive",themes:["All-in-one value","Pricing / value"],platform:"X (Twitter)",insight:"All-in-one value prop resonating organically despite high price mention.",contentAngle:"Stack replacement math: what you'd pay to replicate Kajabi with 5 separate tools."},
+  {text:"Kajabi — Best All-in-One Course Platform. Behavioral triggering is significantly more sophisticated than most standalone email platforms.",sentiment:"positive",themes:["All-in-one value","AI features"],platform:"X (Twitter)",insight:"Third-party review reinforcing all-in-one depth and email automation sophistication.",contentAngle:"Highlight behavioral automation as an undermarketed differentiator vs. competitors."},
+  {text:"If your Kajabi site isn't converting, it's costing you sales. I design clean, high-converting Kajabi websites.",sentiment:"neutral",themes:["Platform UX"],platform:"X (Twitter)",insight:"Pain point around conversion optimization — a use-case gap, not a platform complaint.",contentAngle:"Conversion optimization content: how to turn your Kajabi site into a sales machine."},
+  {text:"kajabi: $119-399/month before you've made a single dollar. You're paying to build their empire before building yours.",sentiment:"negative",themes:["Pricing / value"],platform:"X (Twitter)",insight:"Sharp anti-Kajabi pricing framing — 'build their empire' is a sticky, shareable phrase.",contentAngle:"Counter-narrative: Kajabi's $0 revenue share means every dollar you earn stays yours."},
+  {text:"KI plans 14 days of my content. One click. Claude and Kajabi handle the rest. A system that runs even when I'm sleeping.",sentiment:"positive",themes:["AI features","Cofounder AI"],platform:"X (Twitter)",insight:"AI + Kajabi as passive income system — freedom framing is a strong aspirational hook.",contentAngle:"Build a system that runs while you sleep — AI + Kajabi automation story."},
+  {text:"Kajabi can't do that, I thought. Then I discovered this feature. Now the sales are running automatically.",sentiment:"positive",themes:["Platform UX","Revenue / success"],platform:"X (Twitter)",insight:"Feature discovery surprise — 'I was wrong about Kajabi' is a powerful content format.",contentAngle:"'I was wrong about Kajabi' series — feature surprise reveals that convert skeptics."},
+  {text:"If anyone is on the fence about Shannon Jean's membership on Kajabi — hop off the fence and get to work! Absolutely worth it!",sentiment:"positive",themes:["Community","Revenue / success"],platform:"X (Twitter)",insight:"Peer-to-peer recommendation about a Kajabi community — organic word of mouth.",contentAngle:"Surface Hero-to-Hero recommendations as social proof content."},
+  {text:"Using Kajabi for a new client today and damn is this thing stuck in the stone ages.",sentiment:"negative",themes:["Platform UX"],platform:"X (Twitter)",insight:"UX frustration from a practitioner — 'stone ages' is a damaging phrase if it spreads.",contentAngle:"UX update content highlighting 2025/2026 platform improvements — counter the outdated perception."},
+  {text:"Kajabi is an owned media platform. They have a hard cap on active customers at 20,000 which to me sounds stupid.",sentiment:"mixed",themes:["All-in-one value","Pricing / value"],platform:"X (Twitter)",insight:"Mixed review — acknowledges strengths but the 20K customer cap is a specific product complaint.",contentAngle:null},
+  {text:"everyone mastering tools... becoming experts at canva and kajabi and clickfunnels. same shit keeping them broke.",sentiment:"negative",themes:["AI features","Other"],platform:"X (Twitter)",insight:"Kajabi grouped with 'old world' tools in an AI-first critique — serious positioning risk.",contentAngle:"Position Cofounder AI as proof Kajabi has evolved — not a tool to master, a system that works for you."},
+  {text:"$400 from 10M TikTok views vs $20K first month on Kajabi. Rented vs owned audience — the math is staggering.",sentiment:"positive",themes:["Revenue / success","Community"],platform:"X (Twitter)",insight:"Powerful owned vs rented audience proof point being shared organically.",contentAngle:"'Stop renting your audience' campaign — amplify the TikTok vs Kajabi revenue comparison."},
+  {text:"Do people know Kajabi well? I need it to host a training course. Contact me in DM.",sentiment:"neutral",themes:["Platform UX"],platform:"X (Twitter)",insight:"Discovery-stage potential customer asking community for help — Kajabi not answering.",contentAngle:"Improve discoverability for Kajabi for training/corporate use cases in organic content."},
+  {text:"In Year 2 of solopreneurship, back-to-back 6 figures. Tech stack includes Kajabi (Closed Won Club).",sentiment:"positive",themes:["Revenue / success","All-in-one value"],platform:"X (Twitter)",insight:"Kajabi embedded in a successful solopreneur's public tech stack — aspirational credibility.",contentAngle:"Solopreneur stack content: the tools behind a 6-figure solo business."},
+  {text:"I shifted my focus from Kajabi to AI. This pivot was the BEST decision of my life.",sentiment:"negative",themes:["AI features","Migration"],platform:"X (Twitter)",insight:"Creator who left Kajabi for AI — ironic given Kajabi now has Cofounder AI built in.",contentAngle:"You don't have to choose between Kajabi and AI anymore — Cofounder is the answer."},
+  {text:"How I saved $1,900 switching from Kajabi to Replit AI",sentiment:"negative",themes:["Pricing / value","Migration","Competitor mention"],platform:"X (Twitter)",insight:"Specific $1,900 savings claim from switching away — has viral potential on pricing perception.",contentAngle:"Counter with specific dollar savings on Kajabi vs. a full tool stack comparison."},
+  {text:"Hitting the $1M milestone with Kajabi — our website, Academy, and classes. So grateful to our clients and community.",sentiment:"positive",themes:["Revenue / success"],platform:"LinkedIn",insight:"Authentic milestone celebration — emotional and highly shareable social proof.",contentAngle:"Milestone-moment content series: 'the day I hit $1M on Kajabi' — real stories, real numbers."},
+  {text:"Kajabi is an excellent product but not suitable for everyone. Here are the best Kajabi alternatives.",sentiment:"neutral",themes:["Competitor mention","Pricing / value"],platform:"LinkedIn",insight:"Alternatives content targeting Kajabi users — Kajabi is the benchmark competitors measure against.",contentAngle:"Own the alternatives conversation — Kajabi should publish its own honest comparison content first."},
+  {text:"How to Use Kajabi to Build a Thriving Online Community. Kajabi is a strong contender for building engaged communities.",sentiment:"positive",themes:["Community","All-in-one value"],platform:"LinkedIn",insight:"Community positioning resonating organically — underemphasized in Kajabi's own marketing.",contentAngle:"Lean harder into community-as-product content — it's an undermarketed differentiator vs. courses."},
+  {text:"Kajabi shut down the Expert platform and moved us to Contra. 'OMG… again?' Kajabi is always evolving — things change fast.",sentiment:"mixed",themes:["Platform UX","Other"],platform:"LinkedIn",insight:"Expert ecosystem disruption causing uncertainty — constant change erodes trust with power users.",contentAngle:"Communicate platform changes to Expert community proactively — transparency builds loyalty."},
+  {text:"Kajabi just hit $1B in creator payments. 1M YouTube views = ~$3,000. 100 course students = $30,000. Creators are ditching ad revenue for subscription courses. Kajabi's betting creators will pay $149/month to own their customer list. Plot twist? They're right.",sentiment:"positive",themes:["Revenue / success","Pricing / value","Competitor mention"],platform:"LinkedIn",insight:"Rented vs. owned audience math in two lines — the most persuasive Kajabi value prop framing in the entire dataset.",contentAngle:"'The brutal math' content series — owned audience revenue vs. platform ad pennies, with real comparable numbers."},
+  {text:"I have not heard of this, but I do hear a lot of glitches with the Kajabi app. I would keep messaging support until you get to a product manager. — Virginia Stockwell, Kajabi Expert",sentiment:"negative",themes:["Support quality","Platform UX"],platform:"Reddit",insight:"A Kajabi Expert publicly acknowledging widespread app glitches and advising users to escalate past frontline support — advocacy eroding from the inside.",contentAngle:"Transparent product update content: acknowledge known issues with fix timelines — turn the glitch narrative into a trust-building moment."},
+  {text:"This is how terrible Kajabi customer service is. It's been happening for months. Support even provides incorrect information. We're starting to consider switching to a more reliable platform.",sentiment:"negative",themes:["Support quality","Migration"],platform:"Reddit",insight:"Months-long support failure plus incorrect information from agents — this is active churn intent, not venting.",contentAngle:"Proactive retention content for users mid-frustration — 'before you switch, here's how to get your issue escalated fast.'"},
+  {text:"One of my customers (a larger organization) wanted a demo with Kajabi and asked about it for weeks — not a single response :D",sentiment:"negative",themes:["Support quality","Other"],platform:"Reddit",insight:"Kajabi ghosted an inbound enterprise sales request for weeks — a missed revenue opportunity, not just a support failure.",contentAngle:"Enterprise responsiveness content — show Kajabi actively wants larger organizations and has a real sales process."},
+  {text:"Anyone else looking to get off Kajabi because of the price increases? Looking for something that handles courses, email, funnels, scheduling, CRM without duct-taping 6 tools together.",sentiment:"negative",themes:["Pricing / value","Migration"],platform:"Reddit",insight:"Active churn thread — the feature list they want is exactly what Kajabi offers, meaning price is the only reason they're leaving.",contentAngle:"'What does Kajabi actually cost vs. a 6-tool stack?' — answer before a competitor does."},
+  {text:"Not having to duct-tape tools together is why I went with Kajabi. I'm happy, but damn it sure is expensive. I don't know if there's a similar service that covers such a broad array.",sentiment:"mixed",themes:["Pricing / value","All-in-one value"],platform:"Reddit",insight:"Satisfied user who can't justify the price and doesn't know if alternatives exist — retention-at-risk, not yet churned.",contentAngle:"Own the 'is there anything like Kajabi?' search query before competitors do."},
+  {text:"The all-in-one dream keeps people locked into expensive platforms. Most creators use maybe 40% of what Kajabi offers. Best-in-class tools that integrate well beat one platform doing everything at 70%.",sentiment:"neutral",themes:["Pricing / value","All-in-one value"],platform:"Reddit",insight:"Credible '40% utilization' argument — sticky and persuasive framing that undercuts the all-in-one value prop.",contentAngle:"Feature activation guides — show what full Kajabi utilization looks like vs. paying for 40%."},
+  {text:"I've tried to get someone from Kajabi to respond for two weeks — nothing but Finn the robot. I need help with a custom form liquid object.",sentiment:"negative",themes:["Support quality","Platform UX"],platform:"Reddit",insight:"Two weeks of bot-only support for a technical developer question — failing the most capable power users.",contentAngle:"Developer/advanced user support content — faster technical escalation for power users."},
+  {text:"Kajabi charged me $149 even though I cancelled during the trial after finding it doesn't work in my country.",sentiment:"negative",themes:["Support quality","Pricing / value"],platform:"Reddit",insight:"Unauthorized trial charge for international user — billing trust issue with high churn and reputational risk.",contentAngle:"International availability transparency — clear 'does Kajabi work in your country' guidance before trial signup."},
+  {text:"My checkout event tracking isn't reflected in Meta but shows in Google Analytics. Kajabi says CAPI is working correctly but it clearly isn't.",sentiment:"negative",themes:["Support quality","Platform UX"],platform:"Reddit",insight:"Support providing incorrect technical information — mirrors earlier pattern of agents giving wrong answers.",contentAngle:null},
+  {text:"We went through hell to migrate email. Kajabi forced us to add their subdomain. Open rate tanked from 48% to 28% in two weeks. Emails going straight to promotions folder.",sentiment:"negative",themes:["Support quality","Platform UX"],platform:"Reddit",insight:"Forced email policy change destroyed deliverability mid-campaign — a critical operational failure for email marketers.",contentAngle:"Email deliverability transparency — explain the subdomain policy change and provide a clear migration guide."},
+  {text:"A strict DMARC should have been implemented two years ago. If Kajabi is forcing a prefix to the from address, they're basically killing their email marketing and forcing competent users to move to a separate ESP.",sentiment:"negative",themes:["Support quality","Platform UX"],platform:"Reddit",insight:"Technical expert validating the email deliverability failure and predicting churn of power users.",contentAngle:null},
+  {text:"For the first time in Kajabi history, price increases across every single plan. New customers paying higher prices today. These updates caught us off guard.",sentiment:"negative",themes:["Pricing / value","Other"],platform:"Reddit",insight:"Even Kajabi Experts were blindsided by the price increase announcement — advocates not given advance notice.",contentAngle:"Proactive change communication — brief the Expert community before pricing changes go public."},
+  {text:"I like the freedom it gives me as an entrepreneur. I have everything I need in one place and I have Cofounder to help me whenever I need, in my native language. Thank you, Kajabi!",sentiment:"positive",themes:["Cofounder AI","All-in-one value"],platform:"Trustpilot",insight:"First multilingual Cofounder mention — non-English speaker finding value is a significant untapped international market signal.",contentAngle:"Cofounder works in your language — international creator campaign showing native-language AI support."},
+  {text:"They removed the option to add subtitles manually just to force you to use their AI feature — it will cost an extra $90/month just to add subtitles. I was happy with Kajabi for 5 years, but what they did now is crazy.",sentiment:"negative",themes:["AI features","Pricing / value"],platform:"Trustpilot",insight:"Kajabi removed a free feature to upsell AI — long-term users feel deliberately squeezed, eroding 5 years of loyalty in one move.",contentAngle:"Transparency content around AI add-on pricing — explain the value before users discover the cost mid-workflow."},
+  {text:"AI didn't fix my problem and pretended like someone was working on it. Then I got a survey asking how well Kajabi did at fixing my problem. The problem isn't fixed.",sentiment:"negative",themes:["Support quality","AI features"],platform:"Trustpilot",insight:"AI support misled a user then sent a satisfaction survey — a trust-destroying combination that's worse than no response.",contentAngle:null},
+  {text:"They gaslight you, spin you in circles, make you feel heard but constantly fail to address your issue — only to say 'we'll get back to you via email.' With all the millions you've made off creators, you can't provide real support?",sentiment:"negative",themes:["Support quality"],platform:"Trustpilot",insight:"10-year customer reaching breaking point — 'gaslight' signals emotional betrayal, not just frustration. Churn imminent.",contentAngle:"Long-tenure Hero recognition program — celebrate and personally support the most loyal customers before they leave."},
+  {text:"Despite wanting more advanced AI tools, highly recommends Kajabi for comprehensive features and convenience. All-in-one replaces multiple tools — courses, communities, coaching, podcasts, email marketing, SMS.",sentiment:"positive",themes:["All-in-one value","AI features"],platform:"YouTube",insight:"Strong overall endorsement despite AI criticism — the platform wins on breadth even when AI loses on depth.",contentAngle:"Lead with the platform, not the AI — Cofounder's edge is business context, not raw AI output quality."},
+  {text:"I use Kajabi's internal AI chatbot AMA 0% of the time. I just use ChatGPT instead because it's much better. Kajabi AI is a bit lacking compared to LearnWorlds or Thinkific.",sentiment:"negative",themes:["AI features","Competitor mention"],platform:"YouTube",insight:"Credible reviewer publicly admitting she never uses Kajabi's own AI — '0% of the time' is a devastating and quotable data point.",contentAngle:"Differentiate Cofounder from AMA clearly — Cofounder is a business partner, not a content generator competing with ChatGPT."},
+  {text:"AI course creation tool is helpful for getting started — generates outline, landing page, and email broadcast from a description. But I wish Kajabi could autocreate quizzes directly instead of making me go to ChatGPT.",sentiment:"mixed",themes:["AI features","Platform UX"],platform:"YouTube",insight:"AI is a useful first step but creators hit its ceiling fast — good for launching, weak on depth.",contentAngle:"'Cofounder gets you further than a course outline' — show the full depth of Cofounder vs. the basic AMA tool."},
+  {text:"Upsells and downsells add an average of $60 per customer. Through Kajabi Payments you avoid platform fees — just standard credit card rates around 2.7-2.9%.",sentiment:"positive",themes:["Revenue / success","Pricing / value"],platform:"YouTube",insight:"Specific $60 avg upsell stat from a credible reviewer — concrete numbers outperform general revenue claims every time.",contentAngle:"'$60 more per customer with one feature turned on' — specific monetization proof content."},
+  {text:"September 2025: Kajabi raised prices for the first time in 11 years. Tiered partner commissions with strict activity requirements — partners risked losing eligibility and legacy rates. Creators questioned Kajabi's commitment to small businesses.",sentiment:"negative",themes:["Pricing / value","Other"],platform:"YouTube",insight:"Partner program changes hit harder than the price increase — stripping affiliate commissions from loyal advocates is a brand loyalty crisis.",contentAngle:"Restore partner trust with transparent criteria — publish a clear path back for lapsed affiliates."},
+  {text:"Founder Kenny Rueter returned as co-CEO. Leadership published a manifesto doubling down on human experts over AI-generated content and generic course spam — toward authenticity and real expertise in the creator economy.",sentiment:"positive",themes:["AI features","Other"],platform:"YouTube",insight:"Founder return + anti-AI-spam manifesto directly counters the 'sinking ship' narrative — strong differentiation in an AI-saturated market.",contentAngle:"'Human expertise over AI spam' — amplify the manifesto as a content series positioning Kajabi against the race-to-the-bottom AI content trend."},
+  {text:"Done-for-you service clients have not left the platform. Established businesses are staying and optimizing existing offers. Less established companies may struggle with new pricing.",sentiment:"positive",themes:["Pricing / value","Migration"],platform:"YouTube",insight:"No mass exodus among established users — churn is at the entry level, not among high-value customers. This is a retention story, not a collapse.",contentAngle:"Segment messaging by creator stage — optimization content for established businesses, value justification for newcomers."},
+  {text:"Kajabi is a powerful all-in-one container for scaling — but not suitable for creators who only use a small fraction of the tool.",sentiment:"positive",themes:["All-in-one value","Pricing / value"],platform:"YouTube",insight:"Power user explicitly framing Kajabi as a tool for serious, high-utilization creators — validates premium positioning but confirms it self-selects away from beginners.",contentAngle:"'Are you ready for Kajabi?' quiz-style content — help creators self-qualify rather than hard-selling everyone."},
+  {text:"New branching logic and weight nodes for advanced automations — users can move away from third-party tools like ActiveCampaign. New cohort features allow groups through course content with live video directly in Kajabi.",sentiment:"positive",themes:["AI features","All-in-one value"],platform:"YouTube",insight:"6-week dev cycles producing real named features — ActiveCampaign replacement is a specific, high-value competitive win.",contentAngle:"'Cancel ActiveCampaign' — same playbook as ManyChat cancellation signal, now with full automation depth."},
+  {text:"Kajabi is not failing — it underwent a loud, uncomfortable transition to focus on core, high-value creators. Not a sinking ship, just a painful pivot.",sentiment:"positive",themes:["Pricing / value","Other"],platform:"YouTube",insight:"'Loud, uncomfortable transition' is the most honest and credible 2025 narrative framing in the entire dataset — validates frustration while reframing the story.",contentAngle:"Acknowledge the hard year publicly — a transparent 'what 2025 was really about' post would rebuild more trust than any promotional content."},
+  {text:"They have plugged all this money into rubbish AI features when their website is barely customisable — you can't even change a font without changing the ENTIRE website font. The checkout is poor and misses vital upselling. I'm looking for another platform to migrate my business.",sentiment:"negative",themes:["AI features","Platform UX","Migration"],platform:"Trustpilot",insight:"User explicitly contrasting AI investment against basic UX failures — 'rubbish AI features' while core product neglected is a sharp, quotable critique.",contentAngle:"Show AI investment AND core UX improvements together — separate campaigns risk looking like Kajabi is prioritizing shiny over functional."},
+  {text:"I've decided to move to another platform, even though migration is a major amount of work. I wish I had more carefully considered how locked-in you become once your business is built inside one ecosystem. Paying more while receiving fewer resources and weaker support is hard to justify.",sentiment:"negative",themes:["Support quality","Pricing / value","Migration"],platform:"Trustpilot",insight:"18-month user citing lock-in, price increases AND support decline as triple reasons to leave — the combination is more damaging than any single issue.",contentAngle:null},
+  {text:"I've been using Kajabi since May 2020. Always found it very comprehensive, reliable and easy to use. There's lots of functionality I haven't even explored yet.",sentiment:"positive",themes:["Platform UX"],platform:"Trustpilot",insight:"6-year user satisfaction with no caveats — long tenure and unexplored features suggest strong platform depth beyond surface complaints.",contentAngle:null},
+  {text:"It's impossible to cancel the plan. The button to cancel does not work, I've asked by email multiple times and they won't cancel it for me.",sentiment:"negative",themes:["Support quality"],platform:"Trustpilot",insight:"Cancellation obstruction is a dark pattern — a user literally cannot leave even when they want to. This is a trust and legal risk.",contentAngle:null},
+  {text:"I have tried numerous platforms, all promising big returns and ease of use. They all lied. Then I found Kajabi, with its guide on every tab — it actually works.",sentiment:"positive",themes:["Platform UX"],platform:"Trustpilot",insight:"User who burned through multiple platforms and found Kajabi reliably delivers — migration-to-Kajabi story with strong emotional relief framing.",contentAngle:null},
+  {text:"Kajabi customer service poor. A bot blamed the community founder for the issue. Founder says it's my device. No resolution.",sentiment:"negative",themes:["Support quality","AI features"],platform:"Trustpilot",insight:"AI support deflecting blame onto the customer — 'it's your device' without investigation is the kind of response that triggers public complaints.",contentAngle:null},
+  {text:"Shocked — Live Chat was so good. I had a backend query and it was solved in minutes. Clear, concise, in language a non-tech person could understand.",sentiment:"positive",themes:["Support quality","Platform UX"],platform:"Trustpilot",insight:"A positive support experience exists — but its scarcity in the dataset makes it notable rather than representative.",contentAngle:null},
+  {text:"No forgiveness for not cancelling on time. Tried cancelling on day of invoice. Quoted the rules. It cost me $400 for a product I have not used. Beware.",sentiment:"negative",themes:["Support quality","Pricing / value"],platform:"Trustpilot",insight:"Rigid billing with no goodwill exceptions — the $400 charge for an unused product signals inflexibility that damages long-term trust.",contentAngle:null},
+  {text:"They told me nothing could be done about the charge — but if I upgraded to an annual Growth plan for $2,388 they'd waive it. That felt like dealing with loan sharks. They COULD do something, they just wouldn't unless I paid more.",sentiment:"negative",themes:["Support quality","Pricing / value"],platform:"Trustpilot",insight:"Billing used as leverage to force upselling — 'we can't help unless you pay more' is the most damaging customer service pattern in the dataset.",contentAngle:null},
+  {text:"We used Kajabi for our training portal and recently moved our entire CRM and sales pages to the platform. It is great having everything under one roof. Some minor issues but overall very positive.",sentiment:"positive",themes:["All-in-one value"],platform:"Trustpilot",insight:"B2B/corporate use case — Kajabi handling CRM and sales pages beyond just courses shows enterprise utility that's undermarketed.",contentAngle:null},
+  {text:"I left Kajabi after 4-5 years. Fair pricing IF you use all the features — but if you're just using it for course hosting it's a lot on the higher end. The platform hasn't kept up with innovation.",sentiment:"negative",themes:["Pricing / value","All-in-one value"],platform:"Reddit",insight:"Long-term user citing feature underutilization as the core pricing problem — paying for an all-in-one you only use 40% of is the 'overpriced' narrative in one sentence.",contentAngle:null},
+  {text:"My members complained about the community being too basic — the inability to add multiple pictures or videos makes it feel inferior to any social platform.",sentiment:"negative",themes:["Community","Platform UX"],platform:"Reddit",insight:"Member-level community complaints reaching the creator — when students find features lacking, it reflects on the creator's brand, not just Kajabi.",contentAngle:null},
+  {text:"I no longer have to juggle 12 different platforms. Even though it's expensive, it's actually saved me money and saved me SO MUCH time because of all the headaches I no longer have to deal with.",sentiment:"positive",themes:["All-in-one value","Pricing / value"],platform:"Capterra",insight:"'Saved me money despite being expensive' is the most persuasive all-in-one value framing in any review source.",contentAngle:null},
+  {text:"Expensive for small businesses, design flexibility is limited and backend can feel unintuitive.",sentiment:"negative",themes:["Pricing / value","Platform UX"],platform:"Capterra",insight:"Three pain points in one line from a verified small business user — pricing, design, and UX complexity compound each other for this segment.",contentAngle:null},
+  {text:"I absolutely love Kajabi. I wanted all my landing pages, email campaigns, CRM, video hosting, membership area, payments and assessments in one place. After all my research, Kajabi won — it ticked all my boxes. Support proved really fast and good.",sentiment:"positive",themes:["All-in-one value","Support quality"],platform:"Capterra",insight:"Power user who researched thoroughly and found Kajabi genuinely delivers on the all-in-one promise — with positive support experience.",contentAngle:null},
+  {text:"It's hard to integrate information from other apps to Kajabi. I almost had to start all over. Once I watched some tutorials I learned how to integrate it but it was painful.",sentiment:"negative",themes:["Platform UX"],platform:"Capterra",insight:"Third-party integration friction — Kajabi's all-in-one strength becomes a weakness when users need to connect outside tools.",contentAngle:null},
+  {text:"For the last 5 days I've been locked out of my account despite showing proof of previous months' payments.",sentiment:"negative",themes:["Support quality"],platform:"Capterra",insight:"Account lockout despite payment proof — a billing/access control failure that directly disrupts a customer's live business operations.",contentAngle:null},
+  {text:"I didn't plan to become the Kajabi guy... Tech should not be the reason a great coach fails to reach the people they are meant to help.",sentiment:"positive",themes:["All-in-one value","Community"],platform:"LinkedIn",insight:"Kajabi Expert ecosystem is strong — service providers building entire careers around the platform.",contentAngle:"Spotlight the Kajabi Expert economy — people whose livelihoods depend on Kajabi succeeding."},
+  {text:"The platform is rarely the problem... You don't need a new platform. You need a strategic Kajabi ecosystem.",sentiment:"positive",themes:["All-in-one value","Migration"],platform:"LinkedIn",insight:"Kajabi experts doing retention work that Kajabi's own marketing isn't — a free retention army.",contentAngle:"Partner with Kajabi Experts on 'before you leave' content — reframe platform frustration as strategy gaps."},
+  {text:"The most powerful copy on your website? Your client testimonials... Last day to get Kajabi's 3 for $99 special!",sentiment:"positive",themes:["All-in-one value","Pricing / value"],platform:"LinkedIn",insight:"Partner network distributing Kajabi promos organically — strong affiliate channel signal.",contentAngle:"Equip Kajabi partners with shareable proof-point content to amplify promotions and launches."},
+  {text:"Social-First Creators vs Entrepreneurial Creators... Kajabi's latest report shows how fast this shift is happening. #KajabiPartner #Sponsored",sentiment:"positive",themes:["Revenue / success","Community"],platform:"LinkedIn",insight:"Kajabi's own research being shared as thought leadership — sponsored content that feels organic.",contentAngle:"Double down on the Entrepreneurial Creator report as a content pillar — it's resonating on LinkedIn."},
+  {text:"Kajabi is offering 3 months for $99... No tech overwhelm. No stitching together a million tools. Just one clean platform.",sentiment:"positive",themes:["Pricing / value","All-in-one value"],platform:"LinkedIn",insight:"Promo framed as simplicity and freedom — 'sell smarter, not hustle harder' is landing.",contentAngle:"'Sell smarter, not hustle harder' as a Cofounder AI campaign hook."},
+  {text:"Your entire website is a funnel. Most Kajabi users don't realize this. Kajabi gives you the tools — it's the flow that makes the difference.",sentiment:"positive",themes:["All-in-one value","AI features"],platform:"LinkedIn",insight:"Expert ecosystem creating educational content that does Kajabi's marketing for free.",contentAngle:"Formalize a Kajabi Expert content amplification program — this organic education is free marketing."},
+  {text:"Type 1: hovering over Stripe during launch. Type 2: on vacation, hands-free. The difference is infrastructure, not luck.",sentiment:"positive",themes:["All-in-one value","Revenue / success"],platform:"LinkedIn",insight:"Automation-as-freedom narrative is the strongest emotional hook in this entire dataset.",contentAngle:"'Launch from anywhere' campaign — CEO-level infrastructure and hands-free business story."},
+  {text:"A Comprehensive Guide to Features, Experts, and Offers of Kajabi",sentiment:"neutral",themes:["All-in-one value","Other"],platform:"LinkedIn",insight:"Generic informational content — brand awareness signal but low emotional resonance.",contentAngle:null},
+  {text:"I fell in love with Kajabi because of how easy it makes it to connect with a larger audience. Scalable offers, courses, memberships.",sentiment:"positive",themes:["All-in-one value","Community"],platform:"LinkedIn",insight:"1-to-many scalability is deeply resonant for coaches hitting a 1:1 capacity ceiling.",contentAngle:"'You've hit your ceiling' campaign — speak directly to coaches maxed out on 1:1 client work."},
+  {text:"Took their lead flow from scattered forms to a streamlined automated setup. I love combining Zapier, Notion, and Kajabi.",sentiment:"positive",themes:["All-in-one value","AI features"],platform:"LinkedIn",insight:"Integration depth is a real strength — Kajabi functions as an automation hub, not a walled garden.",contentAngle:"Position Kajabi as the automation hub — not closed, but the center connecting your entire stack."},
+  {text:"Kajabi now does Instagram DMs inside automations. Someone cancelled ManyChat because of it. Kajabi out here trying to be the Swiss Army knife of online business.",sentiment:"positive",themes:["AI features","All-in-one value"],platform:"LinkedIn",insight:"Instagram DM automation generating genuine excitement — ManyChat cancellation is a strong signal.",contentAngle:"'Cancel ManyChat' campaign — specific tool replacement content showing Kajabi's expanding feature set."},
+  {text:"Co-Founder is an AI business partner included with your account. You tell it what you know, it helps you build a real business. Most people have a product and landing page within their first session. This changes the game.",sentiment:"positive",themes:["Cofounder AI","All-in-one value","Pricing / value"],platform:"LinkedIn",insight:"Only post in dataset explaining what Cofounder actually does — 'product and landing page in first session' is a specific, credible proof point.",contentAngle:"'First session' content: show exactly what gets built with Cofounder from zero — real screen, real output, no polish."},
+  {text:"Bob is an AI crew member integrated with Kajabi, trained on course content. He can answer the phone, speak with students, even sound like the educator. Students get immediate support. Educators regain time and focus.",sentiment:"positive",themes:["Cofounder AI","AI features","Community"],platform:"LinkedIn",insight:"Third-party AI built on top of Kajabi — the platform is becoming an AI development layer, not just a course host.",contentAngle:"'Your AI clone handles student questions while you sleep' — 24/7 student support as a Cofounder-era content angle."},
+  {text:"Six-figure creators use AI tools 2x as often as lower-earning creators. More than 60% of Kajabi Heroes are female. Over $7 billion in total creator revenue crossed.",sentiment:"positive",themes:["Revenue / success","AI features"],platform:"LinkedIn",insight:"Kajabi CEO sharing its own data — female-majority creator base and AI correlation with earnings are two underused positioning angles.",contentAngle:"'The creators earning more are the ones using AI more' — data-backed content series linking Cofounder usage to revenue outcomes."},
+  {text:"2,140 creators left Teachable and Kajabi for one reason. Their students kept quitting. CourseSpark AI fixes that.",sentiment:"negative",themes:["Competitor mention","Community"],platform:"X (Twitter)",insight:"Competitor ad directly targeting Kajabi's student retention weakness.",contentAngle:"Counter the retention narrative — showcase Kajabi community and engagement features."},
+  {text:"You won't need Teachable or Kajabi anymore. You can significantly reduce your monthly costs. [UTAGE competitor ad]",sentiment:"negative",themes:["Competitor mention","Pricing / value"],platform:"X (Twitter)",insight:"International competitor directly positioning against Kajabi on price in Japanese market.",contentAngle:null},
+  {text:"I built a course platform because Kajabi charges $149/mo for glorified hosting. One-Click Migration from Kajabi included.",sentiment:"negative",themes:["Competitor mention","Pricing / value"],platform:"X (Twitter)",insight:"Competitor founder using Kajabi as a foil — migration away is the hook.",contentAngle:"Own the migration conversation proactively — make switching to Kajabi easier than away."},
+  {text:"Don't pay for Kajabi → use Systeme.io",sentiment:"negative",themes:["Competitor mention","Pricing / value"],platform:"X (Twitter)",insight:"Kajabi included in a viral free-alternatives list — pricing perception problem at scale.",contentAngle:"Total cost of ownership response: free tools aren't free when you factor in your time."},
+  {text:"Online Course Platform Setup — platforms to learn: Kajabi, Teachable, Thinkific, Skool",sentiment:"neutral",themes:["All-in-one value","Migration"],platform:"X (Twitter)",insight:"Kajabi listed as a learnable skill alongside competitors — neutral category positioning.",contentAngle:null},
+  {text:"Kajabi's EMA: AI Speeds Up Course Creation! #KajabiAI #CourseCreation",sentiment:"positive",themes:["AI features","Cofounder AI"],platform:"X (Twitter)",insight:"Positive AI buzz with strong hashtag usage — organic amplification of Kajabi AI.",contentAngle:"UGC campaign around #KajabiAI — amplify creator-generated AI content."},
+  {text:"Kajabi Maya — AI creator assistant that builds courses from your top X threads. Monthly subscription.",sentiment:"neutral",themes:["Cofounder AI","AI features"],platform:"X (Twitter)",insight:"AI features seen as add-ons with extra cost — pricing transparency needed.",contentAngle:"Clarify what AI is included vs. add-on — pricing transparency around Cofounder features."},
+  {text:"I'm so tired of Thinkific/Kajabi and all of these bloated, outdated, and overpriced platforms. So I built my own.",sentiment:"negative",themes:["Competitor mention","Pricing / value","Platform UX"],platform:"X (Twitter)",insight:"Competitor founder citing Kajabi fatigue as founding motivation — 'bloated' is a recurring word.",contentAngle:"Speed and simplicity narrative — counter 'bloated' perception with UX wins and Cofounder AI."},
+  {text:"Course Hosting Tools have AI tools to help you — Kajabi, Teachable, Thinkific all have AI tools for course titles, outlines and landing pages.",sentiment:"positive",themes:["AI features"],platform:"X (Twitter)",insight:"Neutral-positive awareness of Kajabi AI — but grouped with competitors as equals.",contentAngle:"Differentiate Kajabi AI depth from basic competitors — Cofounder vs. a title generator."},
+  {text:"Kajabi: $149/month. Systeme.io: $0/month. I built a complete sales funnel in under 2 hours. No coding.",sentiment:"negative",themes:["Competitor mention","Pricing / value"],platform:"X (Twitter)",insight:"Direct head-to-head comparison with free competitor — high search intent content.",contentAngle:"ROI reframe: what $149/mo buys that free tools can't — behavioral automation, 0% revenue share."},
+  {text:"Kajabi Maya — AI creator assistant. Monthly subscription pricing.",sentiment:"neutral",themes:["Cofounder AI","AI features"],platform:"X (Twitter)",insight:"Cofounder/Maya awareness growing but pricing model unclear to users.",contentAngle:null}
+]
+function updateDashboard(newEntries) {
+  newEntries.forEach(function(e) { DATA.unshift(e); });
+  render();
+}
+
+var activeFilter = 'all';
+
+function setFilter(f) {
+  activeFilter = f;
+  var map = {'all':'f-all','X (Twitter)':'f-x','LinkedIn':'f-li','Reddit':'f-reddit','Trustpilot':'f-tp','YouTube':'f-yt','Capterra':'f-cap'};
+  Object.keys(map).forEach(function(k){ var el=document.getElementById(map[k]); if(el) el.className='filter-btn'+(k===f?' active':''); });
+  renderList();
+}
+
+function filtered() {
+  return activeFilter==='all' ? DATA : DATA.filter(function(e){ return e.platform===activeFilter; });
+}
+
+function render() {
+  var now = new Date();
+  document.getElementById('lastUpdated').textContent = 'Updated ' + now.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' ' + now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('headerCount').textContent = DATA.length;
+
+  var pos = DATA.filter(function(e){return e.sentiment==='positive';}).length;
+  var neg = DATA.filter(function(e){return e.sentiment==='negative';}).length;
+  var neu = DATA.length - pos - neg;
+  document.getElementById('sTotal').textContent = DATA.length;
+  document.getElementById('sPos').textContent = pos;
+  document.getElementById('sNeg').textContent = neg;
+  document.getElementById('sNeu').textContent = neu;
+
+  var tc={}, ts={};
+  DATA.forEach(function(e){
+    (e.themes||[]).forEach(function(t){
+      tc[t]=(tc[t]||0)+1;
+      if(!ts[t])ts[t]={};
+      ts[t][e.sentiment]=(ts[t][e.sentiment]||0)+1;
+    });
+  });
+  var sorted=Object.keys(tc).sort(function(a,b){return tc[b]-tc[a];});
+  var max=tc[sorted[0]]||1;
+  document.getElementById('themeChart').innerHTML = sorted.length ? sorted.map(function(th){
+    var pos=ts[th]['positive']||0, neg=ts[th]['negative']||0;
+    var dom=Object.keys(ts[th]).sort(function(a,b){return ts[th][b]-ts[th][a];})[0]||'neu';
+    var isSplit = pos>0 && neg>0 && Math.abs(pos-neg)<=1;
+    var cls = isSplit ? 'tb-neu' : dom==='positive'?'tb-pos':dom==='negative'?'tb-neg':dom==='mixed'?'tb-mix':'tb-neu';
+    var label = isSplit ? ' <span style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;margin-left:4px">split</span>' : '';
+    return '<div class="theme-row"><div class="theme-name">'+th+'</div><div class="theme-track"><div class="theme-bar '+cls+'" style="width:'+Math.round(tc[th]/max*100)+'%"></div></div><div class="theme-ct">'+tc[th]+label+'</div></div>';
+  }).join('') : '<div style="color:var(--muted);font-size:13px;font-family:\'DM Mono\',monospace">No data yet</div>';
+
+  var platformOrder = ['X (Twitter)','LinkedIn','Reddit','Trustpilot','YouTube','Capterra'];
+  var platformLabels = {'X (Twitter)':'X (Twitter)','LinkedIn':'LinkedIn','Reddit':'Reddit','Trustpilot':'Trustpilot','YouTube':'YouTube','Capterra':'Capterra'};
+  var platformCaveats = {
+    'X (Twitter)':'Includes competitor promo posts — filter for context',
+    'LinkedIn':'Includes Kajabi Expert/affiliate posts',
+    'Reddit':'Paying customers, minimal bias — highest signal',
+    'Trustpilot':'Verified purchasers',
+    'YouTube':'Reviewer opinions, some affiliate bias',
+    'Capterra':'Verified purchasers, some incentivized reviews',
+  };
+  var pc={};
+  DATA.forEach(function(e){
+    var p=e.platform||'Unknown';
+    if(!pc[p])pc[p]={positive:0,negative:0,neutral:0,mixed:0,total:0};
+    pc[p][e.sentiment]=(pc[p][e.sentiment]||0)+1;
+    pc[p].total++;
+  });
+  var pSorted=platformOrder.filter(function(p){return pc[p];});
+  Object.keys(pc).forEach(function(p){if(pSorted.indexOf(p)===-1)pSorted.push(p);});
+  document.getElementById('platformChart').innerHTML = pSorted.length ? pSorted.map(function(p){
+    var c=pc[p], t=c.total;
+    var pos=c.positive||0, neg=c.negative||0, neu=c.neutral||0, mix=c.mixed||0;
+    var posW=Math.round(pos/t*100), negW=Math.round(neg/t*100), neuMixW=100-posW-negW;
+    var caveat=platformCaveats[p]||'';
+    var label=platformLabels[p]||p;
+    var tagClass=p==='X (Twitter)'?'tag-x':p==='LinkedIn'?'tag-li':p==='Reddit'?'tag-reddit':p==='Trustpilot'?'tag-tp':p==='YouTube'?'tag-yt':'';
+    return '<div class="theme-row" style="align-items:flex-start;flex-direction:column;margin-bottom:12px">'
+      +'<div style="display:flex;align-items:center;gap:8px;width:100%;margin-bottom:4px">'
+      +'<span class="tag '+tagClass+'" style="font-size:11px;padding:2px 8px;border-radius:20px;flex-shrink:0">'+label+'</span>'
+      +'<div style="flex:1;height:10px;border-radius:5px;overflow:hidden;display:flex;background:var(--border2)">'
+      +(pos?'<div style="width:'+posW+'%;background:#639922;height:100%"></div>':'')
+      +(neg?'<div style="width:'+negW+'%;background:#E24B4A;height:100%"></div>':'')
+      +(neuMixW>0?'<div style="width:'+neuMixW+'%;background:#EF9F27;height:100%"></div>':'')
+      +'</div>'
+      +'<span style="font-size:11px;color:var(--muted);font-family:\'DM Mono\',monospace;min-width:24px;text-align:right">'+t+'</span>'
+      +'</div>'
+      +'<div style="padding-left:4px;font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">'
+      +(pos?'<span style="color:#639922">'+pos+' pos</span>':'')
+      +(neg?'<span style="color:#E24B4A">'+neg+' neg</span>':'')
+      +((neu+mix)?'<span style="color:#EF9F27">'+(neu+mix)+' neu/mix</span>':'')
+      +(caveat?'<span style="color:var(--muted);font-style:italic">— '+caveat+'</span>':'')
+      +'</div>'
+      +'</div>';
+  }).join('') : '<div style="color:var(--muted);font-size:13px;font-family:\'DM Mono\',monospace">No data yet</div>';
+
+  renderList();
+}
+
+function renderList() {
+  var src = filtered();
+  document.getElementById('list').innerHTML = src.length ? src.map(function(e){
+    var pltClass = e.platform==='X (Twitter)'?'tag-x':e.platform==='LinkedIn'?'tag-li':e.platform==='Reddit'?'tag-reddit':e.platform==='Trustpilot'?'tag-tp':e.platform==='YouTube'?'tag-yt':e.platform==='Capterra'?'tag-cap':'';
+    return '<div class="entry"><div class="entry-header"><span class="badge badge-'+e.sentiment+'">'+e.sentiment+'</span><div class="entry-text">"'+(e.text||'').slice(0,200)+(e.text&&e.text.length>200?'…':'')+'"</div></div><div class="entry-tags"><span class="tag '+pltClass+'">'+e.platform+'</span>'+(e.themes||[]).map(function(t){return '<span class="tag">'+t+'</span>';}).join('')+'</div>'+(e.insight?'<div class="entry-insight"><div class="insight-label">Signal</div>'+e.insight+'</div>':'')+'</div>';
+  }).join('') : '<div class="empty">// no posts for this platform yet</div>';
+}
+
+function exportCSV() {
+  if(!DATA.length){alert('No data to export yet.');return;}
+  var rows=[['text','sentiment','themes','platform','insight','contentAngle']];
+  DATA.forEach(function(e){
+    rows.push(['"'+(e.text||'').replace(/"/g,'""')+'"',e.sentiment,'"'+(e.themes||[]).join('; ')+'"',e.platform,'"'+(e.insight||'').replace(/"/g,'""')+'"','"'+(e.contentAngle||'').replace(/"/g,'""')+'"']);
+  });
+  var csv=rows.map(function(r){return r.join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='kajabi_sentiment_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+render();
+</script>
+</body>
+</html>
